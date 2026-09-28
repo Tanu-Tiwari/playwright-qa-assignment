@@ -1,13 +1,12 @@
 # Playwright QA Assignment
 
-Small test suite I wrote with Playwright and TypeScript for the QA automation assignment.
+This is my submission for the QA automation assignment. I used Playwright with TypeScript.
 
-- UI tests run against https://www.saucedemo.com
-- API tests run against https://reqres.in
+UI tests are on https://www.saucedemo.com and API tests are on https://reqres.in
 
-## How to run
+## Setup and run
 
-You need Node.js 18 or above.
+Node.js 18+ is needed.
 
 ```
 npm install
@@ -15,60 +14,56 @@ npx playwright install chromium
 npx playwright test
 ```
 
-Other useful commands:
+To run only UI or only API tests:
 
 ```
-npm run test:ui      # only UI tests
-npm run test:api     # only API tests
-npm run report       # open the HTML report from the last run
+npm run test:ui
+npm run test:api
 ```
 
-## What's covered
-
-### UI tests (`tests/ui`)
-
-| # | File | What it checks |
-|---|------|----------------|
-| 1 | `login.spec.ts` | Standard user logs in and lands on the Products page |
-| 2 | `login.spec.ts` | Locked out user sees the correct error and stays on the login page |
-| 3 | `cart.spec.ts` | Adding two products updates the cart badge to 2 |
-| 4 | `checkout.spec.ts` | Full checkout (cart, info, finish) shows "Thank you for your order!" |
-| 5 | `sort.spec.ts` | Sorting by Price (low to high) puts the cheapest product first |
-
-### API tests (`tests/api`)
-
-| # | Test | What it checks |
-|---|------|----------------|
-| 6 | GET `/api/users?page=2` | Status 200, `data` is an array, every user has id, email, first_name, last_name |
-| 7 | POST `/api/users` | Status 201, response has the same name and job we sent, plus id and createdAt |
-| 8 | Create then verify (bonus) | Same POST split into two `test.step`s - create, then verify the result |
-
-The API tests use Playwright's `request` fixture, so no browser is opened.
-
-## Project structure
+To see the HTML report after running:
 
 ```
-pages/
-  LoginPage.ts       login form + error message
-  ProductsPage.ts    product list, cart badge, sorting
-  CheckoutPage.ts    checkout steps + success message
-tests/
-  ui/                UI specs
-  api/               API specs
-playwright.config.ts
+npm run report
 ```
 
-## A few decisions I made
+## Tests
 
-- **Page Object Model** - locators and actions live in `pages/`, so tests only describe the steps and the expected result.
-- **Locators** - I used `getByRole` and `getByPlaceholder` where the element has a clear role or label, and `getByTestId` for the rest. SauceDemo uses `data-test` instead of `data-testid`, so I set `testIdAttribute: 'data-test'` in the config. No XPath or styling classes.
-- **Independent tests** - each UI test logs in on its own (in `beforeEach`), so tests can run in any order and in parallel.
-- **Sort test** - I wait for the dropdown to show "Price (low to high)" before reading prices, so the test doesn't read the list before it re-renders. Then I check the first price equals the lowest price, instead of hardcoding `$7.99`.
-- **Bonus API test** - reqres doesn't actually save users, so there is nothing to GET back. I split the flow into "create" and "verify" steps to show how it would look against a real API.
+UI tests (tests/ui)
 
-## If I had more time
+1. login.spec.ts - standard_user logs in and goes to the Products page
+2. login.spec.ts - locked_out_user gets the locked out error and stays on login page
+3. cart.spec.ts - add two products and check cart badge shows 2
+4. checkout.spec.ts - add products, go through checkout and check the "Thank you for your order!" message
+5. sort.spec.ts - sort by Price (low to high) and check first product has the lowest price
 
-- Log in once and reuse the session with `storageState`, so UI tests are faster.
-- Move test data (users, products, checkout details) into one shared file.
-- Add negative checkout tests (empty fields) and tests for `problem_user`.
-- Add a GitHub Actions workflow to run the suite on every push.
+API tests (tests/api/users.spec.ts)
+
+6. GET /api/users?page=2 - status 200, data is an array and each user has id, email, first_name, last_name
+7. POST /api/users with morpheus / leader - status 201, name and job come back, id and createdAt are there
+8. Bonus - create then verify, done with test.step. reqres does not save the user so I can't GET it back, I just verify the POST response in a separate step
+
+API tests use the request fixture so no browser is opened for them.
+
+## Folder structure
+
+```
+pages/        page objects - LoginPage, ProductsPage, CheckoutPage
+tests/ui/     UI tests
+tests/api/    API tests
+```
+
+## Notes
+
+- I used Page Object Model so all the locators are in the pages folder and tests are easy to read.
+- For locators I mostly used getByRole and getByPlaceholder. Where that was not possible I used getByTestId. Saucedemo uses `data-test` attribute so I changed `testIdAttribute` in the config.
+- Every UI test logs in by itself in beforeEach, so tests don't depend on each other and can run in parallel.
+- In the sort test I wait for the dropdown to show the selected option before reading the prices, otherwise it can read the old order.
+- Only Chromium is used. Screenshots and traces are saved when a test fails.
+
+## What I would add with more time
+
+- Save login state with storageState so UI tests don't log in every time
+- Keep test data like users and products in one file
+- Negative tests for checkout (empty fields) and some tests for problem_user
+- GitHub Actions to run tests on push
